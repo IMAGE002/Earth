@@ -241,22 +241,49 @@
         // Get location using IP address (with multiple fallback APIs - HTTPS only)
         async function getLocationByIP() {
             const apis = [
-                // 1. ipapi.co direct
+                // 1. ipapi.co direct (best option, no API key needed)
                 {
                     url: 'https://ipapi.co/json/',
-                    parseIP: async (data) => ({
-                        latitude: data.latitude,
-                        longitude: data.longitude,
-                        city: data.city,
-                        country: data.country_name
-                    })
+                    parseIP: async (data) => {
+                        // Check for rate limiting
+                        if (data.error) {
+                            throw new Error(`API error: ${data.reason || 'Rate limited or blocked'}`);
+                        }
+                        return {
+                            latitude: data.latitude,
+                            longitude: data.longitude,
+                            city: data.city,
+                            country: data.country_name
+                        };
+                    }
                 },
-                // 2. ipify + ipapi.co combo
+                // 2. ip-api.com (no HTTPS on free tier, but fast and reliable)
+                {
+                    url: 'http://ip-api.com/json/',
+                    parseIP: async (data) => {
+                        if (data.status === 'fail') {
+                            throw new Error(`API error: ${data.message}`);
+                        }
+                        return {
+                            latitude: data.lat,
+                            longitude: data.lon,
+                            city: data.city,
+                            country: data.country
+                        };
+                    }
+                },
+                // 3. ipify + ipapi.co combo (fallback)
                 {
                     url: 'https://api.ipify.org?format=json',
                     parseIP: async (data) => {
+                        console.log(`🔍 Got IP: ${data.ip}, fetching location...`);
                         const response = await fetch(`https://ipapi.co/${data.ip}/json/`);
                         const locationData = await response.json();
+                        
+                        if (locationData.error) {
+                            throw new Error(`Location API error: ${locationData.reason || 'Unknown'}`);
+                        }
+                        
                         return {
                             latitude: locationData.latitude,
                             longitude: locationData.longitude,
@@ -265,14 +292,14 @@
                         };
                     }
                 },
-                // 3. ipgeolocation.io (free tier)
+                // 4. freeipapi.com (another fallback)
                 {
-                    url: 'https://api.ipgeolocation.io/ipgeo?apiKey=',
+                    url: 'https://freeipapi.com/api/json',
                     parseIP: async (data) => ({
-                        latitude: parseFloat(data.latitude),
-                        longitude: parseFloat(data.longitude),
-                        city: data.city,
-                        country: data.country_name
+                        latitude: data.latitude,
+                        longitude: data.longitude,
+                        city: data.cityName,
+                        country: data.countryName
                     })
                 }
             ];
@@ -280,10 +307,22 @@
             for (let i = 0; i < apis.length; i++) {
                 try {
                     console.log(`🌐 Trying IP geolocation API ${i + 1}/${apis.length}...`);
-                    const response = await fetch(apis[i].url);
+                    
+                    // Add timeout to prevent hanging
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 8000);
+                    
+                    const response = await fetch(apis[i].url, {
+                        signal: controller.signal,
+                        headers: {
+                            'Accept': 'application/json'
+                        }
+                    });
+                    
+                    clearTimeout(timeoutId);
                     
                     if (!response.ok) {
-                        throw new Error(`API ${i + 1} request failed with status ${response.status}`);
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                     }
                     
                     const data = await response.json();
@@ -291,26 +330,34 @@
                     
                     const location = await apis[i].parseIP(data);
                     
-                    if (location.latitude && location.longitude) {
+                    // Validate coordinates
+                    if (location.latitude && location.longitude && 
+                        !isNaN(location.latitude) && !isNaN(location.longitude) &&
+                        location.latitude >= -90 && location.latitude <= 90 &&
+                        location.longitude >= -180 && location.longitude <= 180) {
+                        
                         locationPermissionGranted = true;
-                        console.log('✅ Location found (IP-based):', location.city, location.country);
+                        console.log('✅ Location found (IP-based):', location.city || 'Unknown', location.country || 'Unknown');
                         console.log('📌 Coordinates:', location.latitude, location.longitude);
                         
                         // Trigger transition to green
                         transitionToGreen();
                         
                         return location;
+                    } else {
+                        throw new Error('Invalid coordinates received');
                     }
                 } catch (error) {
                     console.warn(`⚠️ API ${i + 1} failed:`, error.message);
+                    
                     if (i === apis.length - 1) {
                         // All APIs failed
                         console.error('❌ All IP geolocation APIs failed');
-                        alert("Could not determine your location. Please try again later.");
+                        alert("Could not determine your location. This might be due to:\n• Ad blockers or privacy extensions\n• VPN or proxy usage\n• Network restrictions\n\nPlease try disabling extensions or check your connection.");
                         return null;
                     }
-                    // Try next API
-                    continue;
+                    // Try next API after a short delay
+                    await new Promise(resolve => setTimeout(resolve, 500));
                 }
             }
             
