@@ -216,37 +216,48 @@
             }, 1000);
         });
         
+        
         function handleLocationAllow() {
             document.getElementById('locationPopup').classList.remove('show');
             
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(
-    (position) => {
-        locationPermissionGranted = true;
-        transitionToGreen();
-        console.log('Location:', position.coords.latitude, position.coords.longitude);
-    },
-    (error) => {
-        console.error('Location error:', error.code, error.message);
-        // Add user-friendly error handling:
-        switch(error.code) {
-            case error.PERMISSION_DENIED:
-                alert("Location access denied. Please enable in browser settings.");
-                break;
-            case error.POSITION_UNAVAILABLE:
-                alert("Location information unavailable.");
-                break;
-            case error.TIMEOUT:
-                alert("Location request timed out.");
-                break;
+                    (position) => {
+                        locationPermissionGranted = true;
+                        transitionToGreen();
+                        console.log('Location:', position.coords.latitude, position.coords.longitude);
+                    },
+                    (error) => {
+                        console.error('Location error:', error);
+                        locationPermissionGranted = false;
+                        
+                        let errorMsg = '';
+                        switch(error.code) {
+                            case error.PERMISSION_DENIED:
+                                errorMsg = "Location access was denied. Please enable it in your browser settings.";
+                                break;
+                            case error.POSITION_UNAVAILABLE:
+                                errorMsg = "Location information is unavailable. Make sure location services are enabled on your device and you have a Wi-Fi or GPS connection.";
+                                break;
+                            case error.TIMEOUT:
+                                errorMsg = "Location request timed out. Please try again.";
+                                break;
+                            default:
+                                errorMsg = "An unknown error occurred getting your location.";
+                        }
+                        
+                        alert(errorMsg);
+                    },
+                    {
+                        enableHighAccuracy: false,
+                        timeout: 10000,
+                        maximumAge: 60000
+                    }
+                );
+            } else {
+                alert("Geolocation is not supported by your browser.");
+            }
         }
-    },
-    {
-        enableHighAccuracy: true,
-        timeout: 5000,
-        maximumAge: 0
-    }
-);
         
         function handleLocationBlock() {
             document.getElementById('locationPopup').classList.remove('show');
