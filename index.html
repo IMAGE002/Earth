@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Earth Simulation</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Jua&display=swap');
+        
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: #000;
+            font-family: Jua, sans-serif;
+            cursor: grab;
+        }
+        
+        body.dragging {
+            cursor: grabbing;
+        }
+        
+        #canvas {
+            display: block;
+            width: 100%;
+            height: 100vh;
+        }
+        
+        .location-button-container {
+            position: fixed;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+            transition: all 0.5s ease;
+        }
+        
+        .location-button-container svg {
+            width: 332px;
+            height: 150px;
+            cursor: pointer;
+            filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.5));
+        }
+        
+        .location-popup {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+            z-index: 1001;
+            max-width: 350px;
+            display: none;
+            animation: slideIn 0.3s ease;
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateX(-100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        .location-popup.show {
+            display: block;
+        }
+        
+        .location-popup h3 {
+            margin: 0 0 10px 0;
+            font-size: 16px;
+            color: #202124;
+        }
+        
+        .location-popup p {
+            margin: 0 0 15px 0;
+            font-size: 14px;
+            color: #5f6368;
+            line-height: 1.5;
+        }
+        
+        .location-popup-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+        
+        .location-popup button {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+        
+        .popup-btn-block {
+            background: #fff;
+            color: #1a73e8;
+        }
+        
+        .popup-btn-block:hover {
+            background: #f1f3f4;
+        }
+        
+        .popup-btn-allow {
+            background: #1a73e8;
+            color: white;
+        }
+        
+        .popup-btn-allow:hover {
+            background: #1557b0;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    
+    <div class="location-popup" id="locationPopup">
+        <h3>🌍 Know your location</h3>
+        <p>This site wants to use your location to show your position on Earth</p>
+        <div class="location-popup-buttons">
+            <button class="popup-btn-block" onclick="handleLocationBlock()">Block</button>
+            <button class="popup-btn-allow" onclick="handleLocationAllow()">Allow</button>
+        </div>
+    </div>
+    
+    <div class="location-button-container">
+        <svg id="locationButton" width="332" height="150" viewBox="0 0 332 150" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <filter id="filter0_d" x="0" y="43.2548" width="329" height="106" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+                    <feFlood flood-opacity="0" result="BackgroundImageFix"/>
+                    <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+                    <feOffset dy="4"/>
+                    <feGaussianBlur stdDeviation="2"/>
+                    <feComposite in2="hardAlpha" operator="out"/>
+                    <feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.25 0"/>
+                    <feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow"/>
+                    <feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow" result="shape"/>
+                </filter>
+                <filter id="filter1_d" x="39" y="67.2548" width="43.7921" height="79" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+                    <feFlood flood-opacity="0" result="BackgroundImageFix"/>
+                    <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+                    <feOffset dy="1"/>
+                    <feGaussianBlur stdDeviation="2"/>
+                    <feComposite in2="hardAlpha" operator="out"/>
+                    <feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.25 0"/>
+                    <feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow"/>
+                    <feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow" result="shape"/>
+                </filter>
+                <filter id="filter2_d" x="52" y="43.2548" width="35.0518" height="31.5" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+                    <feFlood flood-opacity="0" result="BackgroundImageFix"/>
+                    <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+                    <feOffset dy="4"/>
+                    <feGaussianBlur stdDeviation="2"/>
+                    <feComposite in2="hardAlpha" operator="out"/>
+                    <feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.25 0"/>
+                    <feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow"/>
+                    <feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow" result="shape"/>
+                </filter>
+            </defs>
+            
+            <rect width="332" height="150" fill="#F5F5F5" opacity=0 /> 
+            
+            <g id="redPin">
+                <path d="M284.782 0.400566C270.822 2.68859 260.999 16.8223 263.367 31.2703C265.847 46.3994 282.085 59.6255 293.084 68.989C293.127 69.0269 294.895 70.4801 296.73 70.1793L296.893 70.1526C298.729 69.8517 299.929 67.9119 299.959 67.8621C306.938 56.2437 316.813 37.3545 314.444 22.8988C312.075 8.45086 300.855 -2.23383 284.782 0.400566ZM296.32 65.4513C296.258 65.5399 296.164 65.6429 296.079 65.7296C295.97 65.6768 295.849 65.607 295.758 65.5434L294.43 64.4127C284.006 55.5612 269.732 43.4401 267.623 30.5727C265.644 18.4967 273.83 6.6781 285.497 4.76574C300.031 2.38372 308.369 12.5061 310.187 23.5965C311.788 33.3649 307.122 47.4481 296.32 65.4513ZM286.779 13.6483C279.728 14.8041 274.972 21.6061 276.157 28.84C277.343 36.0738 284.021 41.0017 291.073 39.8459C298.125 38.6901 302.881 31.888 301.695 24.6542C300.51 17.4204 293.831 12.4925 286.779 13.6483ZM290.358 35.4796C285.664 36.2489 281.089 32.8783 280.3 28.0623C279.511 23.2474 282.688 18.7039 287.381 17.9346C292.078 17.1647 296.536 20.4569 297.325 25.2718C298.117 30.0875 295.055 34.7098 290.358 35.4796Z" fill="#AD2831"/>
+                <g filter="url(#filter0_d)">
+                    <rect x="4" y="43.2548" width="321" height="98" rx="49" fill="#AD2831"/>
+                </g>
+                <g filter="url(#filter1_d)">
+                    <path d="M55.7403 70.2548H78.7921L67 141.255H55H49.5L43 140.255L55.7403 70.2548Z" fill="white" fill-opacity="0.34"/>
+                </g>
+                <g filter="url(#filter2_d)">
+                    <path d="M60 43.2548H83.0518L79.2958 66.7548H56L60 43.2548Z" fill="white" fill-opacity="0.34"/>
+                </g>
+                <!-- Text outside the filter -->
+                <text x="145" y="87" font-family="Jua, sans-serif" font-size="28" font-weight="Regular" fill="black" text-anchor="middle" dominant-baseline="middle">Search For Best</text>
+                <text x="120" y="105" font-family="Jua, sans-serif" font-size="18" font-weight="Regular" fill="black" fill-opacity="0.7" text-anchor="middle" dominant-baseline="middle">Find Your Location</text>
+                
+                <path d="M292.047 72.2078C288.088 68.2466 282.864 66.2518 277.676 66.2548C272.487 66.2518 267.264 68.2466 263.306 72.2078C259.345 76.1661 257.348 81.3908 257.354 86.5768C257.35 90.2 258.346 93.8278 260.278 97.0428L250.437 106.884C248.521 108.799 248.521 111.904 250.437 113.819C252.351 115.735 255.457 115.735 257.371 113.819L267.213 103.977C270.427 105.91 274.056 106.905 277.676 106.9C282.864 106.905 288.088 104.91 292.047 100.949C296.006 96.9904 298.003 91.767 297.998 86.5767C298.004 81.3908 296.006 76.1661 292.047 72.2078ZM286.497 95.4009C284.052 97.8443 280.882 99.0496 277.676 99.0556C274.47 99.0496 271.302 97.8444 268.854 95.4009C266.41 92.953 265.205 89.7843 265.199 86.5768C265.205 83.3722 266.41 80.2021 268.854 77.7556C271.301 75.3122 274.47 74.1069 277.676 74.1009C280.882 74.1069 284.052 75.3121 286.499 77.7556C288.942 80.2021 290.148 83.3722 290.154 86.5768C290.148 89.7844 288.942 92.953 286.497 95.4009Z" fill="black"/>
+                <g opacity="1">
+                    <path d="M310.55 52.7548L319.487 43.6454C320.787 42.3204 320.787 40.3329 319.487 39.0079C319 38.3454 318.188 37.8485 317.375 37.8485C316.562 37.8485 315.75 38.1798 315.1 38.8423L306 48.1173L297.062 39.0079C295.762 37.6829 293.65 37.6829 292.512 39.0079C291.862 39.5048 291.375 40.3329 291.375 41.3266C291.375 42.3204 291.7 42.9829 292.35 43.6454L301.288 52.7548L292.35 61.8641C291.862 62.5266 291.375 63.3548 291.375 64.3485C291.375 65.1766 291.7 66.0048 292.35 66.6673C293 67.3298 293.812 67.661 294.625 67.661C295.438 67.661 296.25 67.3298 296.9 66.6673L305.837 57.5579L314.775 66.6673C316.075 67.9923 318.188 67.9923 319.325 66.6673C320.625 65.3423 320.625 63.1891 319.325 62.0298L310.55 52.7548Z" fill="#931F27"/>
+                </g>
+            </g>
+            
+            <g id="greenPin" style="opacity: 0;">
+                <path d="M284.782 0.400566C270.822 2.68859 260.999 16.8223 263.367 31.2703C265.847 46.3994 282.085 59.6255 293.084 68.989C293.127 69.0269 294.895 70.4801 296.73 70.1793L296.893 70.1526C298.729 69.8517 299.929 67.9119 299.959 67.8621C306.938 56.2437 316.813 37.3545 314.444 22.8988C312.075 8.45086 300.855 -2.23383 284.782 0.400566ZM296.32 65.4513C296.258 65.5399 296.164 65.6429 296.079 65.7296C295.97 65.6768 295.849 65.607 295.758 65.5434L294.43 64.4127C284.006 55.5612 269.732 43.4401 267.623 30.5727C265.644 18.4967 273.83 6.6781 285.497 4.76574C300.031 2.38372 308.369 12.5061 310.187 23.5965C311.788 33.3649 307.122 47.4481 296.32 65.4513ZM286.779 13.6483C279.728 14.8041 274.972 21.6061 276.157 28.84C277.343 36.0738 284.021 41.0017 291.073 39.8459C298.125 38.6901 302.881 31.888 301.695 24.6542C300.51 17.4204 293.831 12.4925 286.779 13.6483ZM290.358 35.4796C285.664 36.2489 281.089 32.8783 280.3 28.0623C279.511 23.2474 282.688 18.7039 287.381 17.9346C292.078 17.1647 296.536 20.4569 297.325 25.2718C298.117 30.0875 295.055 34.7098 290.358 35.4796Z" fill="#65E983"/>
+                <g filter="url(#filter0_d)">
+                    <rect x="4" y="43.2548" width="321" height="98" rx="49" fill="#65E983"/>
+                </g>
+                <!-- Text outside the filter -->
+                <text x="145" y="82" font-family="Jua, sans-serif" font-size="28" font-weight="Regular" fill="black" text-anchor="middle" dominant-baseline="middle">Search</text>
+                <text x="145" y="108" font-family="Jua, sans-serif" font-size="18" font-weight="Regular" fill="black" fill-opacity="0.7" text-anchor="middle" dominant-baseline="middle">Location Found</text>
+                
+                <path d="M292.047 72.2078C288.088 68.2466 282.864 66.2518 277.676 66.2548C272.487 66.2518 267.264 68.2466 263.306 72.2078C259.345 76.1661 257.348 81.3908 257.354 86.5768C257.35 90.2 258.346 93.8278 260.278 97.0428L250.437 106.884C248.521 108.799 248.521 111.904 250.437 113.819C252.351 115.735 255.457 115.735 257.371 113.819L267.213 103.977C270.427 105.91 274.056 106.905 277.676 106.9C282.864 106.905 288.088 104.91 292.047 100.949C296.006 96.9904 298.003 91.767 297.998 86.5767C298.004 81.3908 296.006 76.1661 292.047 72.2078ZM286.497 95.4009C284.052 97.8443 280.882 99.0496 277.676 99.0556C274.47 99.0496 271.302 97.8444 268.854 95.4009C266.41 92.953 265.205 89.7843 265.199 86.5768C265.205 83.3722 266.41 80.2021 268.854 77.7556C271.301 75.3122 274.47 74.1069 277.676 74.1009C280.882 74.1069 284.052 75.3121 286.499 77.7556C288.942 80.2021 290.148 83.3722 290.154 86.5768C290.148 89.7844 288.942 92.953 286.497 95.4009Z" fill="black"/>
+                <path d="M298.157 45.804L306.044 54.28L325.893 36.22" stroke="#65E983" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M298.157 45.804L306.044 54.28L325.893 36.22" stroke="black" stroke-opacity="0.2" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+            </g>
+        </svg>
+    </div>
+</body>
+</html>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        let locationPermissionGranted = false;
+        
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                document.getElementById('locationPopup').classList.add('show');
+            }, 1000);
+        });
+        
+        function handleLocationAllow() {
+            document.getElementById('locationPopup').classList.remove('show');
+            
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        locationPermissionGranted = true;
+                        transitionToGreen();
+                        console.log('Location:', position.coords.latitude, position.coords.longitude);
+                    },
+                    (error) => {
+                        console.error('Location error:', error);
+                        locationPermissionGranted = false;
+                    }
+                );
+            }
+        }
+        
+        function handleLocationBlock() {
+            document.getElementById('locationPopup').classList.remove('show');
+            locationPermissionGranted = false;
+        }
+        
+        function transitionToGreen() {
+            const redPin = document.getElementById('redPin');
+            const greenPin = document.getElementById('greenPin');
+            
+            let redOpacity = 1;
+            let greenOpacity = 0;
+            
+            const transitionInterval = setInterval(() => {
+                redOpacity -= 0.02;
+                greenOpacity += 0.02;
+                
+                redPin.style.opacity = redOpacity;
+                greenPin.style.opacity = greenOpacity;
+                
+                if (redOpacity <= 0) {
+                    clearInterval(transitionInterval);
+                    redPin.style.opacity = '0';
+                    greenPin.style.opacity = '1';
+                }
+            }, 20);
+        }
+
+        const canvas = document.getElementById('canvas');
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+        
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        
+        const textureLoader = new THREE.TextureLoader();
+        const earthGeometry = new THREE.SphereGeometry(1, 64, 64);
+        
+        const earthTexture = textureLoader.load('https://raw.githubusercontent.com/IMAGE002/Earth/main/8k_earth_daymap.jpg');
+        const bumpTexture = textureLoader.load('https://raw.githubusercontent.com/IMAGE002/Earth/main/8k_earth_normal_map.tif');
+        const specularTexture = textureLoader.load('https://raw.githubusercontent.com/IMAGE002/Earth/main/8k_earth_specular_map.tif');
+        const nightTexture = textureLoader.load('https://raw.githubusercontent.com/IMAGE002/Earth/main/8k_earth_nightmap.jpg');
+        
+        const earthMaterial = new THREE.MeshPhongMaterial({
+            map: earthTexture,
+            normalMap: bumpTexture,
+            normalScale: new THREE.Vector2(0.85, 0.85),
+            specularMap: specularTexture,
+            specular: new THREE.Color(0x333333),
+            shininess: 15
+        });
+        
+        const earth = new THREE.Mesh(earthGeometry, earthMaterial);
+        scene.add(earth);
+        
+        const nightGeometry = new THREE.SphereGeometry(1.001, 64, 64);
+        const nightMaterial = new THREE.ShaderMaterial({
+            uniforms: {
+                nightTexture: { value: nightTexture },
+                sunDirection: { value: new THREE.Vector3(5, 3, 5).normalize() }
+            },
+            vertexShader: `
+                varying vec2 vUv;
+                varying vec3 vNormal;
+                
+                void main() {
+                    vUv = uv;
+                    vNormal = normalize(normalMatrix * normal);
+                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                }
+            `,
+            fragmentShader: `
+                uniform sampler2D nightTexture;
+                uniform vec3 sunDirection;
+                varying vec2 vUv;
+                varying vec3 vNormal;
+                
+                void main() {
+                    vec3 dayColor = texture2D(nightTexture, vUv).rgb;
+                    vec3 normal = normalize(vNormal);
+                    float sunDot = dot(normal, normalize(sunDirection));
+                    float nightStrength = clamp(-sunDot, 0.0, 1.0);
+                    nightStrength = pow(nightStrength, 2.0);
+                    gl_FragColor = vec4(dayColor * nightStrength * 2.0, nightStrength);
+                }
+            `,
+            transparent: true,
+            blending: THREE.AdditiveBlending
+        });
+        const nightLights = new THREE.Mesh(nightGeometry, nightMaterial);
+        scene.add(nightLights);
+        
+        const atmosphereGeometry = new THREE.SphereGeometry(1.02, 64, 64);
+        const atmosphereMaterial = new THREE.MeshBasicMaterial({
+            color: 0x4da6ff,
+            transparent: true,
+            opacity: 0.15,
+            side: THREE.BackSide
+        });
+        const atmosphere = new THREE.Mesh(atmosphereGeometry, atmosphereMaterial);
+        scene.add(atmosphere);
+        
+        const cloudGeometry = new THREE.SphereGeometry(1.01, 64, 64);
+        const cloudTexture = textureLoader.load('https://raw.githubusercontent.com/turban/webgl-earth/master/images/fair_clouds_4k.png');
+        const cloudMaterial = new THREE.MeshPhongMaterial({
+            map: cloudTexture,
+            transparent: true,
+            opacity: 0.8,
+            depthWrite: false
+        });
+        const clouds = new THREE.Mesh(cloudGeometry, cloudMaterial);
+        scene.add(clouds);
+        
+        const sunLight = new THREE.DirectionalLight(0xffffff, 2.5);
+        sunLight.position.set(5, 3, 5);
+        scene.add(sunLight);
+        
+        const ambientLight = new THREE.AmbientLight(0x888888, 1.1);
+        scene.add(ambientLight);
+        
+        const fillLight = new THREE.DirectionalLight(0xffffff, 0.3);
+        fillLight.position.set(-5, 0, -5);
+        scene.add(fillLight);
+        
+        const starsGeometry = new THREE.BufferGeometry();
+        const starsMaterial = new THREE.PointsMaterial({ color: 0xffffff, size: 0.02 });
+        const starsVertices = [];
+        
+        for (let i = 0; i < 5000; i++) {
+            starsVertices.push(
+                (Math.random() - 0.5) * 200,
+                (Math.random() - 0.5) * 200,
+                (Math.random() - 0.5) * 200
+            );
+        }
+        
+        starsGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starsVertices, 3));
+        const stars = new THREE.Points(starsGeometry, starsMaterial);
+        scene.add(stars);
+        
+        camera.position.z = 3;
+        
+        let mouseX = 0;
+        let mouseY = 0;
+        let isDragging = false;
+        let previousMousePosition = { x: 0, y: 0 };
+        const passiveRotationSpeed = 0.0016;
+        
+        document.addEventListener('mousemove', (e) => {
+            mouseX = (e.clientX / window.innerWidth) * 2 - 1;
+            mouseY = -(e.clientY / window.innerHeight) * 2 + 1;
+        });
+        
+        canvas.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            document.body.classList.add('dragging');
+            previousMousePosition = { x: e.clientX, y: e.clientY };
+        });
+        
+        canvas.addEventListener('mousemove', (e) => {
+            if (isDragging) {
+                const deltaX = e.clientX - previousMousePosition.x;
+                const deltaY = e.clientY - previousMousePosition.y;
+                
+                earth.rotation.y += deltaX * 0.005;
+                earth.rotation.x += deltaY * 0.005;
+                nightLights.rotation.y += deltaX * 0.005;
+                nightLights.rotation.x += deltaY * 0.005;
+                clouds.rotation.y += deltaX * 0.005;
+                clouds.rotation.x += deltaY * 0.005;
+                
+                previousMousePosition = { x: e.clientX, y: e.clientY };
+            }
+        });
+        
+        canvas.addEventListener('mouseup', () => {
+            isDragging = false;
+            document.body.classList.remove('dragging');
+        });
+        
+        canvas.addEventListener('mouseleave', () => {
+            isDragging = false;
+            document.body.classList.remove('dragging');
+        });
+        
+        canvas.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            camera.position.z += e.deltaY * 0.005;
+            camera.position.z = Math.max(1.5, Math.min(8, camera.position.z));
+        });
+        
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            if (!isDragging) {
+                earth.rotation.y += passiveRotationSpeed;
+                nightLights.rotation.y += passiveRotationSpeed;
+                clouds.rotation.y += passiveRotationSpeed * 1.05;
+            }
+            
+            camera.position.x += (mouseX * 0.5 - camera.position.x) * 0.05;
+            camera.position.y += (mouseY * 0.5 - camera.position.y) * 0.05;
+            camera.lookAt(scene.position);
+            stars.rotation.y += 0.0001;
+            
+            renderer.render(scene, camera);
+        }
+        
+        animate();
+        
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>
