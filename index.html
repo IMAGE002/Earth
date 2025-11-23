@@ -221,18 +221,32 @@
             
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(
-                    (position) => {
-                        locationPermissionGranted = true;
-                        transitionToGreen();
-                        console.log('Location:', position.coords.latitude, position.coords.longitude);
-                    },
-                    (error) => {
-                        console.error('Location error:', error);
-                        locationPermissionGranted = false;
-                    }
-                );
-            }
+    (position) => {
+        locationPermissionGranted = true;
+        transitionToGreen();
+        console.log('Location:', position.coords.latitude, position.coords.longitude);
+    },
+    (error) => {
+        console.error('Location error:', error.code, error.message);
+        // Add user-friendly error handling:
+        switch(error.code) {
+            case error.PERMISSION_DENIED:
+                alert("Location access denied. Please enable in browser settings.");
+                break;
+            case error.POSITION_UNAVAILABLE:
+                alert("Location information unavailable.");
+                break;
+            case error.TIMEOUT:
+                alert("Location request timed out.");
+                break;
         }
+    },
+    {
+        enableHighAccuracy: true,
+        timeout: 5000,
+        maximumAge: 0
+    }
+);
         
         function handleLocationBlock() {
             document.getElementById('locationPopup').classList.remove('show');
